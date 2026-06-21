@@ -1,7 +1,5 @@
-# 🚀 गिटहब पर दिखने वाला आपके इस ऑटोमेशन टास्क का नाम
 name: "🚀 Flutter Ultimate APK Builder Pro"
 
-# यह टास्क कब चालू होगा? जब भी आप 'main' या 'master' ब्रांच में कोड अपलोड (Push) करेंगे
 on:
   push:
     branches: [ "main", "master" ]
@@ -10,44 +8,46 @@ on:
 
 jobs:
   build:
-    # गिटहब का सबसे लेटेस्ट और शक्तिशाली उबंटू (Ubuntu) सर्वर इस्तेमाल करना
     runs-on: ubuntu-latest
 
     steps:
-    # [स्टेप 1]: आपके गिटहब रिपॉजिटरी से कोड को इस सर्वर पर लोड करना
+    # [स्टेप 1]: सोर्स कोड लोड करना
     - name: "📂 1. Fetching Project Source Code"
       uses: actions/checkout@v4
 
-    # [स्टेप 2]: एंड्रॉइड ऐप कंपाइल करने के लिए सबसे ज़रूरी Java (JDK 17) एनवायरनमेंट सेट करना
+    # [स्टेप 2]: जावा 17 सेट करना
     - name: "☕ 2. Setting up Java Environment (JDK 17)"
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
 
-    # [स्टेप 3]: गिटहब सर्वर पर फ़्लटर (Flutter) और डार्ट (Dart) को इंस्टॉल और एक्टिवेट करना
+    # [स्टेप 3]: फ्लटर स्टेबल वर्जन सेट करना
     - name: "💙 3. Initializing Flutter Stable Environment"
       uses: subosito/flutter-action@v2
       with:
         channel: 'stable'
-        cache: true # कंपाइलेशन स्पीड बढ़ाने के लिए कैशे ऑन रखना
+        cache: true
 
-    # [स्टेप 4]: अगर एंड्रॉइड फोल्डर में कोई फाइल गायब या खराब है, तो उसे ऑटो-रिपेयर करना
-    - name: "🛠️ 4. Auto-Repairing & Re-creating Android Structure"
+    # [स्टेप 4]: पुराने खराब एंड्रॉइड फोल्डर को हटाकर बिल्कुल नया और सही स्ट्रक्चर बनाना
+    - name: "🛠️ 4. Re-creating Clean Android Project Structure"
       run: |
-        flutter create --platforms=android .
+        # अगर पुराना कोई एंड्रॉइड फोल्डर है तो उसे पूरी तरह डिलीट करना ताकि एरर न आए
+        rm -rf android
+        # बिल्कुल फ्रेश एंड्रॉइड स्ट्रक्चर तैयार करना
+        flutter create --platforms=android --org com.professional .
 
-    # [स्टेप 5]: आपके ऐप के लिए डार्ट पैकेजेस और जरूरी ऑफलाइन डेटाबेस लाइब्रेरीज डाउनलोड करना
+    # [स्टेप 5]: पैकेजेस डाउनलोड करना
     - name: "📦 5. Fetching Required Dart & Flutter Packages"
       run: flutter pub get
 
-    # [स्टेप 6]: डार्ट कोडिंग को प्रोसेस करके असली, भारी-भरकम एंड्रॉइड APK फाइल तैयार करना
+    # [स्टेप 6]: बिना किसी एरर के सीधा APK कंपाइल करना
     - name: "🏗️ 6. Compiling High-Performance Debug APK"
       run: flutter build apk --debug
 
-    # [स्टेप 7]: बनी हुई .apk फाइल को गिटहब पर आपके लिए डाउनलोड सेक्शन में अपलोड करना
+    # [स्टेप 7]: तैयार APK को अपलोड करना
     - name: "📥 7. Uploading Finished APK to Artifacts"
       uses: actions/upload-artifact@v4
       with:
-        name: "My-Professional-Dart-App" # डाउनलोड होने वाली फाइल का नाम
-        path: build/app/outputs/flutter-apk/app-debug.apk # सर्वर पर APK का पता
+        name: "My-Professional-Dart-App"
+        path: build/app/outputs/flutter-apk/app-debug.apk
