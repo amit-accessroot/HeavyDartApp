@@ -1,7 +1,9 @@
-name: Flutter Dart APK Builder Pro
+name: Flutter Dart APK Builder Ultimate
 
 on:
   push:
+    branches: [ "main", "master" ]
+  pull_request:
     branches: [ "main", "master" ]
 
 jobs:
@@ -9,28 +11,77 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    # 1. कोड को गिटहब रनर पर लाना
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
+    # 2. जावा एनवायरनमेंट सेट करना
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
 
+    # 3. फ्लटर और डार्ट को चालू करना
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
         channel: 'stable'
-        flutter-version: '3.19.0' # स्टेबल वर्जन
+        cache: true
 
-    - name: Get Dart Packages
+    # 4. गायब एंड्रॉइड कॉन्फ़िगरेशन फाइलों को अपने आप ठीक करना (Fix)
+    - name: Auto-Fix Missing Android Structure
+      run: |
+        mkdir -p android/app/src/main/kotlin/com/professional/heavydartapp
+        
+        # MainActivity.kt फाइल बनाना
+        cat << 'EOF' > android/app/src/main/kotlin/com/professional/heavydartapp/MainActivity.kt
+        package com.professional.heavydartapp
+        import io.flutter.embedding.android.FlutterActivity
+        class MainActivity: FlutterActivity() {}
+        EOF
+
+        # settings.gradle फाइल बनाना
+        cat << 'EOF' > android/settings.gradle
+        pluginManagement {
+            def flutterSdkPath = {
+                def properties = new Properties()
+                def file = new File(rootProject.projectDir, "local.properties")
+                if (file.exists()) {
+                    properties.load(file.newDataInputStream())
+                }
+                def sdkPath = properties.getProperty("flutter.sdk")
+                if (sdkPath == null) {
+                    sdkPath = System.getenv("FLUTTER_ROOT")
+                }
+                if (sdkPath == null) {
+                    throw new GradleException("Flutter SDK not found.")
+                }
+                return sdkPath
+            }()
+            includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+        }
+        plugins {
+            id "com.android.application" version "8.1.0" apply false
+            id "org.jetbrains.kotlin.android" version "1.8.22" apply false
+            id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
+        }
+        EOF
+
+        # local.properties में फ़्लटर पाथ डालना
+        echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+
+    # 5. डार्ट पैकेज डाउनलोड करना
+    - name: Install Dependencies
       run: flutter pub get
 
-    - name: Build Android APK
+    # 6. असली APK कंपाइलेशन (बिना एरर के)
+    - name: Build Debug APK
       run: flutter build apk --debug
 
+    # 7. बनी हुई फाइल को अपलोड करना
     - name: Upload Finished APK
       uses: actions/upload-artifact@v4
       with:
-        name: MyHeavyDartApp
+        name: MyHeavyDartApp-Fixed
         path: build/app/outputs/flutter-apk/app-debug.apk
